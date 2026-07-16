@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useKiosk } from "../context/KioskContext";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 export default function Login() {
-  const { login, voiceGuidance, setVoiceGuidance } = useKiosk();
+  const { login, voiceGuidance, setVoiceGuidance, t } = useKiosk();
   const [employeeId, setEmployeeId] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -27,20 +28,24 @@ export default function Login() {
         <div className="flex items-center justify-between">
           <span className="text-xl font-bold text-ink">Kiosk</span>
           <div className="flex gap-2">
-            <span className="flex items-center gap-1 rounded-full border border-line px-3 py-1.5 text-sm text-ink">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M11 5 6 9H2v6h4l5 4Z" />
-                <path d="M15.5 8.5a5 5 0 0 1 0 7" />
-              </svg>
-              Eng
-            </span>
-            <span className="flex items-center gap-1 rounded-full border border-line px-3 py-1.5 text-sm text-ink">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20Z" />
-              </svg>
-              Eng
-            </span>
+            <LanguageSwitcher
+              ariaLabel="Change voice guidance language"
+              icon={
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M11 5 6 9H2v6h4l5 4Z" />
+                  <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+                </svg>
+              }
+            />
+            <LanguageSwitcher
+              ariaLabel="Change display language"
+              icon={
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20Z" />
+                </svg>
+              }
+            />
           </div>
         </div>
 
@@ -50,12 +55,10 @@ export default function Login() {
           </div>
           <h1 className="text-center text-2xl font-semibold">
             <span className="bg-gradient-to-r from-brand-blue to-brand-pink bg-clip-text text-transparent">
-              Welcome to Kiosk by Seamless
+              {t("login.heading")}
             </span>
           </h1>
-          <p className="mt-2 text-center text-sm text-muted">
-            Sign in with your Employee ID to mark attendance, check your payslip, request leave and more.
-          </p>
+          <p className="mt-2 text-center text-sm text-muted">{t("login.subheading")}</p>
 
           <hr className="my-6 border-line" />
 
@@ -68,8 +71,8 @@ export default function Login() {
                 </svg>
               </span>
               <span>
-                <span className="block text-sm font-medium text-ink">Voice guidance</span>
-                <span className="block text-xs text-muted">We'll read each step aloud as you go</span>
+                <span className="block text-sm font-medium text-ink">{t("login.voiceGuidanceTitle")}</span>
+                <span className="block text-xs text-muted">{t("login.voiceGuidanceDesc")}</span>
               </span>
             </span>
             <input
@@ -84,13 +87,14 @@ export default function Login() {
 
           <form onSubmit={handleSubmit}>
             <label htmlFor="employeeId" className="mb-1.5 block text-sm text-ink">
-              Employee ID<span className="text-red-500">*</span>
+              {t("login.employeeIdLabel")}
+              <span className="text-red-500">*</span>
             </label>
             <input
               id="employeeId"
               value={employeeId}
               onChange={(e) => setEmployeeId(e.target.value)}
-              placeholder="Enter employee ID e.g emp-10433"
+              placeholder={t("login.employeeIdPlaceholder")}
               className="w-full rounded-xl border border-line px-4 py-3 text-sm outline-none focus:border-brand-blue"
               autoFocus
             />
@@ -102,23 +106,21 @@ export default function Login() {
               className="mt-4 w-full rounded-xl bg-gray-200 py-3 text-sm font-medium text-gray-500 transition
                 disabled:cursor-not-allowed enabled:bg-brand-blue enabled:text-white"
             >
-              {submitting ? "Checking…" : "Continue"}
+              {submitting ? t("login.checking") : t("login.continue")}
             </button>
-            <p className="mt-3 text-center text-xs text-muted">Try emp-10433 or emp-10501</p>
+            <p className="mt-3 text-center text-xs text-muted">{t("login.tryHint")}</p>
           </form>
         </div>
 
         <p className="text-center text-sm text-muted">
-          Powered by <span className="font-semibold text-brand-blue">Seamless</span>
+          {t("login.poweredBy")} <span className="font-semibold text-brand-blue">Seamless</span>
           <span className="font-semibold text-brand-green">HR</span>
         </p>
       </div>
 
       <div className="relative hidden overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-orange-50 lg:flex lg:flex-col lg:justify-center lg:px-16">
-        <h2 className="text-3xl font-bold text-brand-blue">Simplify your Workday</h2>
-        <p className="mt-3 max-w-md text-ink/80">
-          Track time, make requests, take appraisals and stay connected – all in one place.
-        </p>
+        <h2 className="text-3xl font-bold text-brand-blue">{t("login.heroTitle")}</h2>
+        <p className="mt-3 max-w-md text-ink/80">{t("login.heroSubtitle")}</p>
         <div className="mt-10 flex h-64 items-center gap-4">
           <div className="flex flex-col gap-4">
             <span className="h-16 w-16 rounded-full bg-pink-200" />

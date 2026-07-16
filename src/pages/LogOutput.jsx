@@ -2,11 +2,11 @@ import { useState } from "react";
 import SubPageHeader from "../components/SubPageHeader";
 import { useKiosk } from "../context/KioskContext";
 
-const TASKS = ["Packaging Line B", "Quality Check", "Palletizing", "Sorting"];
+const TASK_KEYS = ["task.packaging", "task.quality", "task.palletizing", "task.sorting"];
 
 export default function LogOutput() {
-  const { outputEntries, addOutputEntry } = useKiosk();
-  const [task, setTask] = useState(TASKS[0]);
+  const { outputEntries, addOutputEntry, t } = useKiosk();
+  const [taskKey, setTaskKey] = useState(TASK_KEYS[0]);
   const [units, setUnits] = useState("");
   const [confirmed, setConfirmed] = useState(false);
 
@@ -16,7 +16,7 @@ export default function LogOutput() {
     e.preventDefault();
     const value = Number(units);
     if (!value || value <= 0) return;
-    addOutputEntry({ task, units: value });
+    addOutputEntry({ task: t(taskKey), units: value });
     setUnits("");
     setConfirmed(true);
     setTimeout(() => setConfirmed(false), 2000);
@@ -24,36 +24,40 @@ export default function LogOutput() {
 
   return (
     <>
-      <SubPageHeader title="Log Output" subtitle="Add units for today's task" />
+      <SubPageHeader title={t("tiles.output.title")} subtitle={t("tiles.output.subtitle")} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-line bg-white p-6">
           <div className="mb-5 flex items-center justify-between rounded-xl bg-brand-indigo/5 p-4">
-            <span className="text-sm text-muted">Total logged today</span>
-            <span className="text-xl font-semibold text-ink">{total} units</span>
+            <span className="text-sm text-muted">{t("output.totalLoggedToday")}</span>
+            <span className="text-xl font-semibold text-ink">
+              {total} {t("output.units")}
+            </span>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="mb-1.5 block text-sm text-ink">Task / Line</label>
+              <label className="mb-1.5 block text-sm text-ink">{t("output.taskLine")}</label>
               <select
-                value={task}
-                onChange={(e) => setTask(e.target.value)}
+                value={taskKey}
+                onChange={(e) => setTaskKey(e.target.value)}
                 className="w-full rounded-xl border border-line px-4 py-3 text-sm outline-none focus:border-brand-blue"
               >
-                {TASKS.map((t) => (
-                  <option key={t}>{t}</option>
+                {TASK_KEYS.map((key) => (
+                  <option key={key} value={key}>
+                    {t(key)}
+                  </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="mb-1.5 block text-sm text-ink">Units completed</label>
+              <label className="mb-1.5 block text-sm text-ink">{t("output.unitsCompleted")}</label>
               <input
                 type="number"
                 min="1"
                 value={units}
                 onChange={(e) => setUnits(e.target.value)}
-                placeholder="e.g. 120"
+                placeholder={t("output.unitsPlaceholder")}
                 className="w-full rounded-xl border border-line px-4 py-3 text-sm outline-none focus:border-brand-blue"
               />
             </div>
@@ -62,15 +66,15 @@ export default function LogOutput() {
               disabled={!units}
               className="w-full rounded-xl bg-brand-blue py-3 text-sm font-semibold text-white disabled:opacity-40"
             >
-              {confirmed ? "Logged ✓" : "Add entry"}
+              {confirmed ? t("output.logged") : t("output.addEntry")}
             </button>
           </form>
         </div>
 
         <div className="rounded-2xl border border-line bg-white p-6">
-          <p className="mb-4 font-semibold text-ink">Today's entries</p>
+          <p className="mb-4 font-semibold text-ink">{t("output.todaysEntries")}</p>
           {outputEntries.length === 0 ? (
-            <p className="text-sm text-muted">No output logged yet.</p>
+            <p className="text-sm text-muted">{t("output.noneYet")}</p>
           ) : (
             <ul className="space-y-3">
               {outputEntries.map((entry) => (
@@ -81,7 +85,9 @@ export default function LogOutput() {
                       {entry.time.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
                     </p>
                   </div>
-                  <span className="font-semibold text-ink">{entry.units} units</span>
+                  <span className="font-semibold text-ink">
+                    {entry.units} {t("output.units")}
+                  </span>
                 </li>
               ))}
             </ul>

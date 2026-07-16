@@ -1,13 +1,19 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getWorker } from "../data/mockData";
+import { translations } from "../i18n/translations";
+import { DEFAULT_LANGUAGE } from "../i18n/languages";
 
 const KioskContext = createContext(null);
 
 const IDLE_LIMIT_MS = 60_000; // auto-lock like an ATM when nobody is using the kiosk
+const LANGUAGE_STORAGE_KEY = "kiosk.language";
 
 export function KioskProvider({ children }) {
   const [worker, setWorker] = useState(null);
+  const [language, setLanguageState] = useState(
+    () => localStorage.getItem(LANGUAGE_STORAGE_KEY) || DEFAULT_LANGUAGE,
+  );
   const [clockedIn, setClockedIn] = useState(false);
   const [clockInTime, setClockInTime] = useState(null);
   const [outputEntries, setOutputEntries] = useState([]);
@@ -21,10 +27,28 @@ export function KioskProvider({ children }) {
   const idleTimerRef = useRef(null);
   const warningTimerRef = useRef(null);
 
+  const setLanguage = useCallback((code) => {
+    setLanguageState(code);
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, code);
+  }, []);
+
+  const t = useCallback(
+    (key, vars) => {
+      let str = translations[language]?.[key] ?? translations[DEFAULT_LANGUAGE][key] ?? key;
+      if (vars) {
+        for (const [name, value] of Object.entries(vars)) {
+          str = str.replaceAll(`{{${name}}}`, value);
+        }
+      }
+      return str;
+    },
+    [language],
+  );
+
   const login = useCallback(
     (employeeId) => {
       const found = getWorker(employeeId);
-      if (!found) return { ok: false, error: "We couldn't find that Employee ID. Please check and try again." };
+      if (!found) return { ok: false, error: t("login.errorNotFound") };
       setWorker(found);
       setClockedIn(false);
       setClockInTime(null);
@@ -35,7 +59,7 @@ export function KioskProvider({ children }) {
       navigate("/dashboard");
       return { ok: true };
     },
-    [navigate],
+    [navigate, t],
   );
 
   const endSession = useCallback(() => {
@@ -115,6 +139,9 @@ export function KioskProvider({ children }) {
       problemReports,
       voiceGuidance,
       idleWarning,
+      language,
+      setLanguage,
+      t,
       setVoiceGuidance,
       login,
       endSession,
@@ -136,6 +163,9 @@ export function KioskProvider({ children }) {
       problemReports,
       voiceGuidance,
       idleWarning,
+      language,
+      setLanguage,
+      t,
       login,
       endSession,
       clockIn,

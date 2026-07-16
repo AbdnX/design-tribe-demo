@@ -1,11 +1,13 @@
 import SubPageHeader from "../components/SubPageHeader";
 import { RECOGNITION } from "../data/mockData";
 import { ReviewIcon } from "../components/icons";
+import { useKiosk } from "../context/KioskContext";
 
 export default function Recognition() {
+  const { t } = useKiosk();
   return (
     <>
-      <SubPageHeader title="Review & Recognition" subtitle="See praise and performance" />
+      <SubPageHeader title={t("tiles.recognition.title")} subtitle={t("tiles.recognition.subtitle")} />
 
       <ul className="space-y-4">
         {RECOGNITION.map((r) => (

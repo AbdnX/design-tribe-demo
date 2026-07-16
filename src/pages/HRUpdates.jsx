@@ -1,10 +1,12 @@
 import SubPageHeader from "../components/SubPageHeader";
 import { HR_UPDATES } from "../data/mockData";
+import { useKiosk } from "../context/KioskContext";
 
 export default function HRUpdates() {
+  const { t } = useKiosk();
   return (
     <>
-      <SubPageHeader title="HR Updates" subtitle="News and announcements" />
+      <SubPageHeader title={t("tiles.hrUpdates.title")} subtitle={t("tiles.hrUpdates.subtitle")} />
 
       <ul className="space-y-4">
         {HR_UPDATES.map((u) => (

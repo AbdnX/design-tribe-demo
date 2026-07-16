@@ -1,11 +1,13 @@
 import SubPageHeader from "../components/SubPageHeader";
 import { BENEFITS } from "../data/mockData";
 import { BenefitsIcon } from "../components/icons";
+import { useKiosk } from "../context/KioskContext";
 
 export default function Benefits() {
+  const { t } = useKiosk();
   return (
     <>
-      <SubPageHeader title="Benefits" subtitle="Health, savings and more" />
+      <SubPageHeader title={t("tiles.benefits.title")} subtitle={t("tiles.benefits.subtitle")} />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {BENEFITS.map((b) => (

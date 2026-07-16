@@ -3,7 +3,7 @@ import SubPageHeader from "../components/SubPageHeader";
 import { useKiosk } from "../context/KioskContext";
 
 export default function Loans() {
-  const { worker, loanRequests, addLoanRequest } = useKiosk();
+  const { worker, loanRequests, addLoanRequest, t } = useKiosk();
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -17,7 +17,7 @@ export default function Loans() {
     const value = Number(amount);
     if (!value || value <= 0) return;
     if (value > available) {
-      setError(`You can request up to ${currency}${available.toLocaleString()}.`);
+      setError(t("loans.errorMax", { amount: `${currency}${available.toLocaleString()}` }));
       return;
     }
     setError("");
@@ -30,7 +30,7 @@ export default function Loans() {
 
   return (
     <>
-      <SubPageHeader title="Loans" subtitle="Apply for a salary advance" />
+      <SubPageHeader title={t("tiles.loans.title")} subtitle={t("tiles.loans.subtitle")} />
 
       <div className="mb-6 grid grid-cols-2 gap-3">
         <div className="rounded-xl border border-line bg-white p-4 text-center">
@@ -38,33 +38,35 @@ export default function Loans() {
             {currency}
             {available.toLocaleString()}
           </p>
-          <p className="text-xs text-muted">Available to request</p>
+          <p className="text-xs text-muted">{t("loans.available")}</p>
         </div>
         <div className="rounded-xl border border-line bg-white p-4 text-center">
           <p className="text-xl font-semibold text-ink">
             {currency}
             {outstanding.toLocaleString()}
           </p>
-          <p className="text-xs text-muted">Outstanding balance</p>
+          <p className="text-xs text-muted">{t("loans.outstanding")}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-line bg-white p-6">
           <div>
-            <label className="mb-1.5 block text-sm text-ink">Amount ({currency})</label>
+            <label className="mb-1.5 block text-sm text-ink">
+              {t("loans.amountLabel")} ({currency})
+            </label>
             <input
               type="number"
               min="1"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder={`Up to ${available.toLocaleString()}`}
+              placeholder={t("loans.upTo", { amount: available.toLocaleString() })}
               className="w-full rounded-xl border border-line px-4 py-3 text-sm outline-none focus:border-brand-blue"
             />
             {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
           </div>
           <div>
-            <label className="mb-1.5 block text-sm text-ink">Reason (optional)</label>
+            <label className="mb-1.5 block text-sm text-ink">{t("loans.reasonOptional")}</label>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
@@ -77,14 +79,14 @@ export default function Loans() {
             disabled={!amount}
             className="w-full rounded-xl bg-brand-blue py-3 text-sm font-semibold text-white disabled:opacity-40"
           >
-            {submitted ? "Request sent ✓" : "Request advance"}
+            {submitted ? t("loans.sent") : t("loans.requestAdvance")}
           </button>
         </form>
 
         <div className="rounded-2xl border border-line bg-white p-6">
-          <p className="mb-4 font-semibold text-ink">Your requests</p>
+          <p className="mb-4 font-semibold text-ink">{t("loans.yourRequests")}</p>
           {loanRequests.length === 0 ? (
-            <p className="text-sm text-muted">No loan requests yet.</p>
+            <p className="text-sm text-muted">{t("loans.noneYet")}</p>
           ) : (
             <ul className="space-y-3">
               {loanRequests.map((r) => (

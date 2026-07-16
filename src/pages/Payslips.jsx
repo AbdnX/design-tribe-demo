@@ -4,7 +4,7 @@ import { useKiosk } from "../context/KioskContext";
 import { PayslipsIcon } from "../components/icons";
 
 export default function Payslips() {
-  const { worker } = useKiosk();
+  const { worker, t } = useKiosk();
   const [downloading, setDownloading] = useState(null);
 
   function handleDownload(month) {
@@ -14,7 +14,7 @@ export default function Payslips() {
 
   return (
     <>
-      <SubPageHeader title="Payslips" subtitle="View and download your pay" />
+      <SubPageHeader title={t("tiles.payslips.title")} subtitle={t("tiles.payslips.subtitle")} />
 
       <ul className="divide-y divide-line rounded-2xl border border-line bg-white">
         {worker.payslips.map((p) => (
@@ -25,7 +25,7 @@ export default function Payslips() {
               </span>
               <div>
                 <p className="font-medium text-ink">{p.month}</p>
-                <p className="text-sm text-muted">Net pay: {p.net}</p>
+                <p className="text-sm text-muted">{t("payslips.netPay", { amount: p.net })}</p>
               </div>
             </div>
             <button
@@ -33,7 +33,7 @@ export default function Payslips() {
               onClick={() => handleDownload(p.month)}
               className="shrink-0 rounded-full border border-line px-4 py-2 text-sm font-medium text-ink hover:bg-gray-50"
             >
-              {downloading === p.month ? "Downloading…" : "Download"}
+              {downloading === p.month ? t("payslips.downloading") : t("payslips.download")}
             </button>
           </li>
         ))}

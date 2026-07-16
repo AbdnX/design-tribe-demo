@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useKiosk } from "../context/KioskContext";
 
 export default function IdleWarningModal() {
-  const { idleWarning, staySignedIn, endSession } = useKiosk();
+  const { idleWarning, staySignedIn, endSession, t } = useKiosk();
   const [countdown, setCountdown] = useState(10);
 
   useEffect(() => {
@@ -21,24 +21,22 @@ export default function IdleWarningModal() {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
-        <p className="text-lg font-semibold text-ink">Still there?</p>
-        <p className="mt-1 text-sm text-muted">
-          For your privacy, this kiosk will lock in {countdown}s and end your session.
-        </p>
+        <p className="text-lg font-semibold text-ink">{t("idle.stillThere")}</p>
+        <p className="mt-1 text-sm text-muted">{t("idle.lockWarning", { seconds: countdown })}</p>
         <div className="mt-5 flex gap-3">
           <button
             type="button"
             onClick={endSession}
             className="flex-1 rounded-xl border border-line py-2.5 text-sm font-medium text-ink"
           >
-            End session
+            {t("idle.endSession")}
           </button>
           <button
             type="button"
             onClick={staySignedIn}
             className="flex-1 rounded-xl bg-brand-blue py-2.5 text-sm font-medium text-white"
           >
-            I'm still here
+            {t("idle.stillHere")}
           </button>
         </div>
       </div>
