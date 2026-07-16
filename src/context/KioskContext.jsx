@@ -21,6 +21,51 @@ const SPEECH_LANG = {
   ig: "ig-NG",
 };
 
+// Browsers expose a grab-bag of voices of wildly different quality under the
+// same API — including OS "novelty" sound-effect voices (Zarvox, Bad News,
+// Bahh...) that speechSynthesis makes no effort to separate from real ones.
+// This ranks candidates so we pick something that actually sounds like
+// natural speech instead of whatever the OS lists first.
+const NOVELTY_VOICE_NAMES = new Set([
+  "albert", "bad news", "bahh", "bells", "boing", "bubbles", "cellos",
+  "good news", "jester", "organ", "superstar", "trinoids", "whisper",
+  "wobble", "zarvox", "bruce",
+]);
+const LEGACY_ROBOTIC_VOICE_NAMES = new Set(["fred", "ralph", "kathy", "junior", "princess"]);
+const KNOWN_NATURAL_VOICE_NAMES = new Set([
+  "samantha", "alex", "ava", "susan", "allison", "nicky", "zoe", "tom",
+  "karen", "moira", "tessa", "fiona", "victoria", "daniel", "serena",
+  "thomas", "jacques", "amélie", "amelie", "anna", "marie",
+]);
+
+function scoreVoice(voice) {
+  const rawName = voice.name;
+  const bareName = rawName
+    .toLowerCase()
+    .replace(/\s*\(.*?\)\s*/g, "")
+    .trim();
+  let score = 0;
+  if (!voice.localService) score += 3; // networked voices (e.g. Chrome's Google voices) are usually higher fidelity
+  if (/neural|natural/i.test(rawName)) score += 6;
+  if (/premium|enhanced|plus/i.test(rawName)) score += 4;
+  if (/google/i.test(rawName)) score += 4;
+  if (KNOWN_NATURAL_VOICE_NAMES.has(bareName)) score += 2;
+  if (/\(.+\)/.test(rawName)) score += 1; // Apple's modern cross-language persona voices (Eddy, Flo, Reed, Shelley, ...)
+  if (NOVELTY_VOICE_NAMES.has(bareName)) score -= 8;
+  if (LEGACY_ROBOTIC_VOICE_NAMES.has(bareName)) score -= 4;
+  if (/compact/i.test(rawName)) score -= 4; // Apple's lowest-quality tier, explicitly labeled
+  if (voice.default) score += 1;
+  return score;
+}
+
+function pickBestVoice(voices, bcp47, language) {
+  const exact = voices.filter((v) => v.lang === bcp47);
+  const sameLanguage = voices.filter((v) => v.lang?.toLowerCase().startsWith(language));
+  const candidates = exact.length ? exact : sameLanguage;
+  if (!candidates.length) return null;
+  return [...candidates].sort((a, b) => scoreVoice(b) - scoreVoice(a))[0];
+}
+
 export function KioskProvider({ children }) {
   const [worker, setWorker] = useState(null);
   const [language, setLanguageState] = useState(
@@ -71,9 +116,10 @@ export function KioskProvider({ children }) {
       const utterance = new SpeechSynthesisUtterance(text);
       const bcp47 = SPEECH_LANG[language] || SPEECH_LANG[DEFAULT_LANGUAGE];
       utterance.lang = bcp47;
-      const match = voicesRef.current.find((v) => v.lang === bcp47) || voicesRef.current.find((v) => v.lang?.startsWith(language));
-      if (match) utterance.voice = match;
+      const best = pickBestVoice(voicesRef.current, bcp47, language);
+      if (best) utterance.voice = best;
       utterance.rate = 0.95;
+      utterance.pitch = 1;
       synth.speak(utterance);
     },
     [voiceGuidance, language],
