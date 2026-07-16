@@ -8,6 +8,18 @@ const KioskContext = createContext(null);
 
 const IDLE_LIMIT_MS = 60_000; // auto-lock like an ATM when nobody is using the kiosk
 const LANGUAGE_STORAGE_KEY = "kiosk.language";
+const VOICE_GUIDANCE_STORAGE_KEY = "kiosk.voiceGuidance";
+
+// Voices installed on kiosk hardware vary a lot, so this is a best-effort
+// hint — speechSynthesis falls back to a default voice when no exact match
+// for the language is installed.
+const SPEECH_LANG = {
+  en: "en-US",
+  fr: "fr-FR",
+  yo: "yo-NG",
+  ha: "ha-NG",
+  ig: "ig-NG",
+};
 
 export function KioskProvider({ children }) {
   const [worker, setWorker] = useState(null);
@@ -20,16 +32,55 @@ export function KioskProvider({ children }) {
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [loanRequests, setLoanRequests] = useState([]);
   const [problemReports, setProblemReports] = useState([]);
-  const [voiceGuidance, setVoiceGuidance] = useState(false);
+  const [voiceGuidance, setVoiceGuidanceState] = useState(
+    () => localStorage.getItem(VOICE_GUIDANCE_STORAGE_KEY) === "true",
+  );
   const [idleWarning, setIdleWarning] = useState(false);
 
   const navigate = useNavigate();
   const idleTimerRef = useRef(null);
   const warningTimerRef = useRef(null);
+  const voicesRef = useRef([]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    const loadVoices = () => {
+      voicesRef.current = window.speechSynthesis.getVoices();
+    };
+    loadVoices();
+    window.speechSynthesis.addEventListener("voiceschanged", loadVoices);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", loadVoices);
+  }, []);
 
   const setLanguage = useCallback((code) => {
     setLanguageState(code);
     localStorage.setItem(LANGUAGE_STORAGE_KEY, code);
+  }, []);
+
+  const setVoiceGuidance = useCallback((enabled) => {
+    setVoiceGuidanceState(enabled);
+    localStorage.setItem(VOICE_GUIDANCE_STORAGE_KEY, String(enabled));
+    if (!enabled) window.speechSynthesis?.cancel();
+  }, []);
+
+  const speak = useCallback(
+    (text) => {
+      if (!voiceGuidance || !text || typeof window === "undefined" || !window.speechSynthesis) return;
+      const synth = window.speechSynthesis;
+      synth.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      const bcp47 = SPEECH_LANG[language] || SPEECH_LANG[DEFAULT_LANGUAGE];
+      utterance.lang = bcp47;
+      const match = voicesRef.current.find((v) => v.lang === bcp47) || voicesRef.current.find((v) => v.lang?.startsWith(language));
+      if (match) utterance.voice = match;
+      utterance.rate = 0.95;
+      synth.speak(utterance);
+    },
+    [voiceGuidance, language],
+  );
+
+  const cancelSpeech = useCallback(() => {
+    window.speechSynthesis?.cancel();
   }, []);
 
   const t = useCallback(
@@ -63,6 +114,7 @@ export function KioskProvider({ children }) {
   );
 
   const endSession = useCallback(() => {
+    window.speechSynthesis?.cancel();
     setWorker(null);
     setClockedIn(false);
     setClockInTime(null);
@@ -143,6 +195,8 @@ export function KioskProvider({ children }) {
       setLanguage,
       t,
       setVoiceGuidance,
+      speak,
+      cancelSpeech,
       login,
       endSession,
       clockIn,
@@ -166,6 +220,9 @@ export function KioskProvider({ children }) {
       language,
       setLanguage,
       t,
+      setVoiceGuidance,
+      speak,
+      cancelSpeech,
       login,
       endSession,
       clockIn,

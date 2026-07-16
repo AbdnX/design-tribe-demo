@@ -1,9 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { useKiosk } from "../context/KioskContext";
+import { useAnnounce } from "../hooks/useAnnounce";
 
 export default function SubPageHeader({ title, subtitle }) {
   const navigate = useNavigate();
   const { t } = useKiosk();
+  useAnnounce(subtitle ? `${title}. ${subtitle}.` : title);
   return (
     <div className="mb-6 flex items-center gap-3">
       <button

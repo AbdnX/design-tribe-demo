@@ -1,12 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useKiosk } from "../context/KioskContext";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 
 export default function Login() {
-  const { login, voiceGuidance, setVoiceGuidance, t } = useKiosk();
+  const { login, voiceGuidance, setVoiceGuidance, speak, t } = useKiosk();
   const [employeeId, setEmployeeId] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (voiceGuidance) speak(`${t("login.heading")}. ${t("login.subheading")}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voiceGuidance, t]);
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -18,6 +23,7 @@ export default function Login() {
       if (!result.ok) {
         setError(result.error);
         setSubmitting(false);
+        speak(result.error);
       }
     }, 300);
   }

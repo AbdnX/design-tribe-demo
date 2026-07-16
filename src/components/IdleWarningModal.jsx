@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useKiosk } from "../context/KioskContext";
 
 export default function IdleWarningModal() {
-  const { idleWarning, staySignedIn, endSession, t } = useKiosk();
+  const { idleWarning, staySignedIn, endSession, speak, t } = useKiosk();
   const [countdown, setCountdown] = useState(10);
 
   useEffect(() => {
@@ -10,10 +10,12 @@ export default function IdleWarningModal() {
       setCountdown(10);
       return;
     }
+    speak(`${t("idle.stillThere")}. ${t("idle.lockWarning", { seconds: 10 })}`);
     const interval = setInterval(() => {
       setCountdown((c) => Math.max(0, c - 1));
     }, 1000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idleWarning]);
 
   if (!idleWarning) return null;

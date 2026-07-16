@@ -1,5 +1,6 @@
 import TileCard from "../components/TileCard";
 import { useKiosk } from "../context/KioskContext";
+import { useAnnounce } from "../hooks/useAnnounce";
 import {
   ShiftIcon,
   OutputIcon,
@@ -18,6 +19,13 @@ const NOW = new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2
 export default function Dashboard() {
   const { worker, clockedIn, clockIn, clockOut, t } = useKiosk();
   const { shift } = worker;
+
+  const clockStatus = clockedIn ? t("common.clockedIn") : t("common.notClockedIn");
+  const greeting = t("dashboard.greeting", { name: worker.name.split(" ")[0] })
+    .replace(/[^\p{L}\p{N}\p{P}\s]/gu, "")
+    .replace(/\s+([.,])/g, "$1")
+    .trim();
+  useAnnounce(`${greeting}. ${t("dashboard.subheading")} ${clockStatus}.`);
 
   return (
     <>
