@@ -8,5 +8,8 @@ export default defineConfig({
   server: {
     port: Number(process.env.PORT) || 5173,
     strictPort: false,
+    proxy: {
+      "/api": `http://localhost:${process.env.TTS_SERVER_PORT || 8787}`,
+    },
   },
 })

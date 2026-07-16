@@ -66,6 +66,12 @@ function pickBestVoice(voices, bcp47, language) {
   return [...candidates].sort((a, b) => scoreVoice(b) - scoreVoice(a))[0];
 }
 
+// Browser/OS speech synthesis has essentially no real voices for these —
+// route them to the Spitch proxy (server/index.js) instead, which has
+// production voices built specifically for Nigerian languages.
+const SPITCH_LANGUAGES = new Set(["yo", "ha", "ig"]);
+const spitchAudioCache = new Map(); // `${language}:${text}` -> object URL, avoids re-billing repeat lines
+
 export function KioskProvider({ children }) {
   const [worker, setWorker] = useState(null);
   const [language, setLanguageState] = useState(
@@ -86,6 +92,15 @@ export function KioskProvider({ children }) {
   const idleTimerRef = useRef(null);
   const warningTimerRef = useRef(null);
   const voicesRef = useRef([]);
+  const currentAudioRef = useRef(null);
+
+  const stopAllSpeech = useCallback(() => {
+    window.speechSynthesis?.cancel();
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.speechSynthesis) return;
@@ -102,17 +117,50 @@ export function KioskProvider({ children }) {
     localStorage.setItem(LANGUAGE_STORAGE_KEY, code);
   }, []);
 
-  const setVoiceGuidance = useCallback((enabled) => {
-    setVoiceGuidanceState(enabled);
-    localStorage.setItem(VOICE_GUIDANCE_STORAGE_KEY, String(enabled));
-    if (!enabled) window.speechSynthesis?.cancel();
+  const setVoiceGuidance = useCallback(
+    (enabled) => {
+      setVoiceGuidanceState(enabled);
+      localStorage.setItem(VOICE_GUIDANCE_STORAGE_KEY, String(enabled));
+      if (!enabled) stopAllSpeech();
+    },
+    [stopAllSpeech],
+  );
+
+  const speakWithSpitch = useCallback(async (text, language) => {
+    const cacheKey = `${language}:${text}`;
+    let url = spitchAudioCache.get(cacheKey);
+    if (!url) {
+      try {
+        const res = await fetch("/api/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, language }),
+        });
+        if (!res.ok) throw new Error(`TTS proxy responded ${res.status}`);
+        const blob = await res.blob();
+        url = URL.createObjectURL(blob);
+        spitchAudioCache.set(cacheKey, url);
+      } catch (err) {
+        console.error("Spitch voice guidance failed:", err);
+        return;
+      }
+    }
+    const audio = new Audio(url);
+    currentAudioRef.current = audio;
+    audio.play().catch((err) => console.error("Audio playback failed:", err));
   }, []);
 
   const speak = useCallback(
     (text) => {
-      if (!voiceGuidance || !text || typeof window === "undefined" || !window.speechSynthesis) return;
-      const synth = window.speechSynthesis;
-      synth.cancel();
+      if (!voiceGuidance || !text) return;
+      stopAllSpeech();
+
+      if (SPITCH_LANGUAGES.has(language)) {
+        speakWithSpitch(text, language);
+        return;
+      }
+
+      if (typeof window === "undefined" || !window.speechSynthesis) return;
       const utterance = new SpeechSynthesisUtterance(text);
       const bcp47 = SPEECH_LANG[language] || SPEECH_LANG[DEFAULT_LANGUAGE];
       utterance.lang = bcp47;
@@ -120,14 +168,12 @@ export function KioskProvider({ children }) {
       if (best) utterance.voice = best;
       utterance.rate = 0.95;
       utterance.pitch = 1;
-      synth.speak(utterance);
+      window.speechSynthesis.speak(utterance);
     },
-    [voiceGuidance, language],
+    [voiceGuidance, language, stopAllSpeech, speakWithSpitch],
   );
 
-  const cancelSpeech = useCallback(() => {
-    window.speechSynthesis?.cancel();
-  }, []);
+  const cancelSpeech = stopAllSpeech;
 
   const t = useCallback(
     (key, vars) => {
@@ -160,7 +206,7 @@ export function KioskProvider({ children }) {
   );
 
   const endSession = useCallback(() => {
-    window.speechSynthesis?.cancel();
+    stopAllSpeech();
     setWorker(null);
     setClockedIn(false);
     setClockInTime(null);
@@ -170,7 +216,7 @@ export function KioskProvider({ children }) {
     setProblemReports([]);
     setIdleWarning(false);
     navigate("/");
-  }, [navigate]);
+  }, [navigate, stopAllSpeech]);
 
   const clockIn = useCallback(() => {
     setClockedIn(true);
